@@ -887,7 +887,7 @@ impl<TSubstream> Discv5<TSubstream> {
             kbucket::Entry::Absent(entry) => {
                 if new_status == NodeStatus::Connected {
                     // Note: If an ENR is not provided, no record is added
-                    debug_assert!(enr.is_some());
+                    //debug_assert!(enr.is_some());
                     if let Some(enr) = enr {
                         match entry.insert(enr, new_status) {
                             kbucket::InsertResult::Inserted => {
