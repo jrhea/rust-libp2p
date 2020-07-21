@@ -555,6 +555,16 @@ impl Gossipsub {
             "Handling message: {:?} from peer: {:?}",
             msg_id, propagation_source
         );
+
+        // Dispatch notification to the user before LRU handles it
+        // dispatch the message to the user
+        if self.mesh.keys().any(|t| msg.topics.iter().any(|u| t == u)) {
+            debug!("Sending received message to user");
+            self.events.push_back(NetworkBehaviourAction::GenerateEvent(
+                GossipsubEvent::Message(propagation_source.clone(), msg_id.clone(), msg.clone()),
+            ));
+        }
+
         if self.received.put(msg_id.clone(), ()).is_some() {
             debug!("Message already received, ignoring. Message: {:?}", msg_id);
             return;
@@ -563,14 +573,6 @@ impl Gossipsub {
         // add to the memcache
         self.mcache.put(msg.clone());
 
-        // dispatch the message to the user
-        if self.mesh.keys().any(|t| msg.topics.iter().any(|u| t == u)) {
-            debug!("Sending received message to user");
-            self.events.push_back(NetworkBehaviourAction::GenerateEvent(
-                GossipsubEvent::Message(propagation_source.clone(), msg_id, msg.clone()),
-            ));
-        }
-
         // forward the message to mesh peers, if no validation is required
         if !self.config.manual_propagation {
             let message_id = (self.config.message_id_fn)(&msg);
@@ -578,7 +580,7 @@ impl Gossipsub {
             debug!("Completed message handling for message: {:?}", message_id);
         }
     }
-
+    
     /// Handles received subscriptions.
     fn handle_received_subscriptions(
         &mut self,
